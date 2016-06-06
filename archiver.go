@@ -7,9 +7,39 @@ import (
 	"path/filepath"
 )
 
-// It  has functions that help to archive files
+// AddFileToArchive : Add source file to the end of tar archive. The sourcePath has to be the absolute path of the file to be added.
+func AddFileToArchive(archivename, sourcePath, target string) ( error) {
 
-//CreateArchive : Will create/append source to IN_<aggregatorID>_<yyyy-mm-dd>.tar in the target folder
+	tw, err  := CreateArchive(archivename, target)
+	if (err != nil)	{
+		return err
+	}
+
+	file, err := os.Open(sourcePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	if stat, err := file.Stat(); err == nil {
+		// now lets create the header as needed for this file within the tarball
+		header, err := tar.FileInfoHeader(stat, "")
+		if err != nil {
+			return err
+		}
+		// write the header to the tarball archive
+		if err := tw.WriteHeader(header); err != nil {
+			return err
+		}
+		// copy the file data to the tarball
+		if _, err := io.Copy(tw, file); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+
+//CreateArchive : Will create/append archive in the target folder
 /*	Input:
 		archivename - name of tar
 		target location of tar file
@@ -42,36 +72,4 @@ func CreateArchive(archivename, target string) (*tar.Writer, error) {
 	}
 
 	return tw, nil
-}
-
-
-// AddFileToArchive : Add source file to the end of tar archive. The sourcePath has to be the absolute path of the file to be added.
-func AddFileToArchive(archivename, sourcePath, target string) ( error) {
-
-	tw, err  := CreateArchive(archivename, target)
-	if (err != nil)	{
-		return err
-	}
-
-	file, err := os.Open(sourcePath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	if stat, err := file.Stat(); err == nil {
-		// now lets create the header as needed for this file within the tarball
-		header, err := tar.FileInfoHeader(stat, "")
-		if err != nil {
-			return err
-		}
-		// write the header to the tarball archive
-		if err := tw.WriteHeader(header); err != nil {
-			return err
-		}
-		// copy the file data to the tarball
-		if _, err := io.Copy(tw, file); err != nil {
-			return err
-		}
-	}
-	return nil
 }
